@@ -14,6 +14,7 @@ import android.widget.Button
 import android.widget.Spinner
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
+import androidx.core.graphics.drawable.toBitmap
 import app.naklab.assu.android.kotlinfontmaker.repository.FontRepository
 import app.naklab.assu.android.kotlinfontmaker.repository.ImageRepository
 import app.naklab.assu.android.kotlinfontmaker.services.FontMaker
@@ -21,6 +22,7 @@ import app.naklab.assu.android.kotlinfontmaker.services.Svg2TtfConverter
 import app.naklab.assu.android.kotlinfontmaker.view.FontCanvasView
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayout
+import kotlinx.android.synthetic.main.activity_font_maker.*
 import kotlinx.android.synthetic.main.activity_main.*
 import org.opencv.android.OpenCVLoader
 
@@ -35,9 +37,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        setContentView(R.layout.activity_font_maker)
 
         fontName = "only font"
+
+        editTextFontName.setText(fontName)
 
         fontRepository = FontRepository(this)
         // 画像の保存・読み込みを行うために必要なプログラム
@@ -64,41 +68,45 @@ class MainActivity : AppCompatActivity() {
 
         initViews()
 
-        currentUId = FontMaker.getUId(spinner_font_menu.selectedItemPosition)
-        main_font_canvas.background =
+//        currentUId = FontMaker.getUId(spinner_font_menu.selectedItemPosition)
+        currentUId = FontMaker.getUId(0)
+
+        mainFontCanvas.background =
             BitmapDrawable(imageRepository.loadImageBitmap(fontName, currentUId))
     }
 
     private fun initViews() {
         // init views
         // init click listeners
-        button_clear.setOnClickListener { clearFontCanvas() }
-        button_undo.setOnClickListener { main_font_canvas.undo() }
-        button_redo.setOnClickListener { main_font_canvas.redo() }
-        button_make.setOnClickListener { makeFont() }
-        button_convert.setOnClickListener {
+        buttonClear.setOnClickListener { clearFontCanvas() }
+        buttonUndo.setOnClickListener { mainFontCanvas.undo() }
+        buttonRedo.setOnClickListener { mainFontCanvas.redo() }
+//        button_make.setOnClickListener { makeFont() }
+        buttonConvert.setOnClickListener {
+            makeFont()
+
             Snackbar.make(
-                spinner_font_menu, "変換を開始します",
+                buttonConvert, "変換を開始します",
                 Snackbar.LENGTH_SHORT
             ).show()
             val cloudConvert = makeConverter()
             cloudConvert.convert(FontRepository.TMP_FILE_PATH, fontName)
         }
-        spinner_font_menu.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(adapterView: AdapterView<*>, view: View, i: Int, l: Long) {
-                onFontItemSelected(i)
-            }
-
-            override fun onNothingSelected(adapterView: AdapterView<*>) {
-
-            }
-        }
+//        spinner_font_menu.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+//            override fun onItemSelected(adapterView: AdapterView<*>, view: View, i: Int, l: Long) {
+//                onFontItemSelected(i)
+//            }
+//
+//            override fun onNothingSelected(adapterView: AdapterView<*>) {
+//
+//            }
+//        }
 
         // 書いた情報を取得するために DrawingCache を有効にしておく
-        main_font_canvas.isDrawingCacheEnabled = true
+        mainFontCanvas.isDrawingCacheEnabled = true
 
         // スピナーの要素を選んだ時の処理が初回起動時に動かないようにする
-        spinner_font_menu.isFocusable = false
+//        spinner_font_menu.isFocusable = false
 
         initTabLayout()
 
@@ -107,13 +115,13 @@ class MainActivity : AppCompatActivity() {
     private fun initTabLayout() {
         val fontArray = resources.getStringArray(R.array.string_array_font_menu)
         for (f in fontArray) {
-            val tab = tablayout_fonts.newTab().setText(f)
-            tablayout_fonts.addTab(tab)
+            val tab = tablayoutFonts.newTab().setText(f)
+            tablayoutFonts.addTab(tab)
         }
 
-        tablayout_fonts.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+        tablayoutFonts.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab) {
-                onFontItemSelected(tablayout_fonts.getSelectedTabPosition())
+                onFontItemSelected(tablayoutFonts.getSelectedTabPosition())
             }
 
             override fun onTabUnselected(tab: TabLayout.Tab) {
@@ -129,39 +137,40 @@ class MainActivity : AppCompatActivity() {
 
     private fun onFontItemSelected(position: Int) {
         // スピナーの要素を選んだ時の処理が初回起動時に動かないようにする
-        if (!spinner_font_menu.isFocusable) {
-            spinner_font_menu.isFocusable = true
-            return
-        }
+//        if (!spinner_font_menu.isFocusable) {
+//            spinner_font_menu.isFocusable = true
+//            return
+//        }
 
         // 何から何に変更されたのかを通知する（別になくてもいい）
-        Snackbar.make(
-            spinner_font_menu,
-            "[ " + spinner_font_menu.selectedItem.toString() + " ] " + currentUId + "→" + FontMaker.getUId(
-                position
-            ),
-            Snackbar.LENGTH_SHORT
-        ).show()
+//        Snackbar.make(
+//            spinner_font_menu,
+//            "[ " + spinner_font_menu.selectedItem.toString() + " ] " + currentUId + "→" + FontMaker.getUId(
+//                position
+//            ),
+//            Snackbar.LENGTH_SHORT
+//        ).show()
 
-        var bmp = main_font_canvas.drawingCache
+        var bmp = mainFontCanvas.drawingCache
         // FontMaker の方で font-svg ファイルへ定義する vert-adv-y を 1000 としているので Bitmap のサイズも 1000 にリサイズする
         bmp = Bitmap.createScaledBitmap(bmp, 1000, 1000, false)
-        imageRepository.saveImageBitmap(bmp, fontName, currentUId)
+        imageRepository.saveImageBitmap(bmp ?: mainFontCanvas.background.toBitmap(), fontName, currentUId)
 
         clearFontCanvas()
         currentUId = FontMaker.getUId(position)
-        main_font_canvas.background =
+        mainFontCanvas.background =
             BitmapDrawable(imageRepository.loadImageBitmap(fontName, currentUId))
 
         //TODO FIX 再帰呼び出しにならない？？
-        spinner_font_menu.setSelection(position)
-        tablayout_fonts.getTabAt(position)!!.select()
+//        spinner_font_menu.setSelection(position)
+        tablayoutFonts.getTabAt(position)!!.select()
+        textViewSampleChar.text = tablayoutFonts.getTabAt(position)?.text
     }
 
     private fun clearFontCanvas() {
-        main_font_canvas.destroyDrawingCache()
-        main_font_canvas.clear()
-        main_font_canvas.setBackgroundResource(R.drawable.background_white)
+        mainFontCanvas.destroyDrawingCache()
+        mainFontCanvas.clear()
+        mainFontCanvas.setBackgroundResource(R.drawable.background_white)
     }
 
     private fun makeFont() {
@@ -177,7 +186,7 @@ class MainActivity : AppCompatActivity() {
         fontRepository.writeSvg(svg)
 
         Snackbar.make(
-            spinner_font_menu, "書き出しが完了しました",
+            buttonConvert, "書き出しが完了しました",
             Snackbar.LENGTH_SHORT
         ).show()
     }
@@ -226,14 +235,14 @@ class MainActivity : AppCompatActivity() {
         cloudConvert.setListener(object : Svg2TtfConverter.OnConvertListener {
             override fun onConvertComplete() {
                 Snackbar.make(
-                    spinner_font_menu, "フォントファイルを書き出しました",
+                    buttonConvert, "フォントファイルを書き出しました",
                     Snackbar.LENGTH_SHORT
                 ).show()
             }
 
             override fun onConvertFailure() {
                 Snackbar.make(
-                    spinner_font_menu, "失敗しました",
+                    buttonConvert, "失敗しました",
                     Snackbar.LENGTH_SHORT
                 ).show()
             }
