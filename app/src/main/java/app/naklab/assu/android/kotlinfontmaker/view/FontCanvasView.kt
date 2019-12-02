@@ -66,7 +66,7 @@ class FontCanvasView : View {
 //                currentPath = Path()
                 val p = Path()
                 currentPathIndex++
-                if (currentPathIndex <= paths.size) {
+                if (currentPathIndex >= paths.size) {
                     paths.add(p)
                 } else {
                     paths.set(currentPathIndex, p)
