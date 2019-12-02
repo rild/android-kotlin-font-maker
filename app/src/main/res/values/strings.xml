@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">KotlinFontMaker</string>
+    <string name="app_name">FontMaker</string>
 
     <string-array
         name="string_array_font_menu">
